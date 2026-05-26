@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duda Fan - Smart Fan in the Vent ! 🐻🍊</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Space+Mono:wght@400;700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #f97316;       /* Orange khas Duda Fan */
+            --primary-hover: #ea580c;
+            --secondary: #eab308;     /* Kuning aksen */
+            --bg-accent: #fef3c7;     /* Soft yellow pastel */
+            --text-main: #7c2d12;     /* Cokelat gelap hangat untuk teks */
+            --text-muted: #b45309;
+            --card-bg: #ffffff;
+            --border-color: #fde047;  /* Border kuning lembut */
+            --radius: 24px;
+            --radius-sm: 14px;
+            --success: #84cc16;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Fredoka', 'Nunito', sans-serif;
+            min-height: 100vh;
+            background-color: #fffdf4;
+            /* Pattern Garis Diagonal Halus Sesuai Gambar */
+            background-image: linear-gradient(135deg, rgba(254,243,199,0.4) 25%, transparent 25%, transparent 50%, rgba(254,243,199,0.4) 50%, rgba(254,243,199,0.4) 75%, transparent 75%, transparent);
+            background-size: 60px 60px;
+            color: var(--text-main);
+            padding: 30px 16px 60px;
+        }
+
+        .wrapper {
+            max-width: 950px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ===== STATUS FLOATING BADGES ===== */
+        .status-wrap {
+            position: fixed; top: 20px; right: 20px;
+            display: flex; flex-direction: column; gap: 8px; z-index: 1000;
+        }
+        .badge {
+            background: white; padding: 8px 18px; border-radius: 30px;
+            font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 12px rgba(124,45,18,0.08);
+            border: 2px solid #fef3c7; color: var(--text-muted);
+        }
+        .badge.online { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
+
+        /* ===== HEADER DESIGN ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo-area {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+        }
+        .logo-title {
+            font-size: 3.5em; font-weight: 700; color: #f97316;
+            text-shadow: 3px 3px 0px #fef3c7, 5px 5px 0px rgba(249,115,22,0.1);
+            letter-spacing: 1px;
+        }
+        .subtitle-banner {
+            background: #f97316; color: white; padding: 6px 24px;
+            border-radius: 12px; font-weight: 700; font-size: 1.1em;
+            box-shadow: 0 4px 10px rgba(249,115,22,0.25);
+            display: inline-block; margin-top: 5px;
+        }
+
+        /* ===== CARDS LAYOUT ===== */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 3px solid var(--border-color);
+            box-shadow: 0 8px 0px rgba(254,243,199,0.6);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 1.1em; font-weight: 700; color: var(--primary);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* ===== INPUTS & BUTTONS ===== */
+        label { display: block; font-weight: 600; font-size: 0.85em; color: var(--text-muted); margin-bottom: 4px; }
+        input {
+            width: 100%; padding: 12px 16px; border: 2px solid #fef3c7;
+            border-radius: var(--radius-sm); font-size: 0.95em; background: #fffbeb;
+            color: var(--text-main); outline: none; transition: all .3s; margin-bottom: 14px;
+            font-family: 'Nunito', sans-serif;
+        }
+        input:focus { border-color: var(--primary); background: #ffffff; }
+        
+        .btn {
+            background: #f97316; color: white; border: none;
+            padding: 14px 24px; border-radius: var(--radius-sm);
+            font-weight: 700; font-size: 0.95em; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: all .2s; font-family: 'Fredoka', sans-serif;
+            box-shadow: 0 4px 0px #c2410c;
+        }
+        .btn:hover { background: #ea580c; transform: translateY(-1px); }
+        .btn:active { transform: translateY(3px); box-shadow: none; }
+        .btn:disabled { background: #cbd5e1; box-shadow: 0 4px 0px #94a3b8; cursor: not-allowed; transform: none; }
+        .btn-full { width: 100%; justify-content: center; }
+        .btn-dark { background: #475569; box-shadow: 0 4px 0px #334155; }
+        .btn-dark:hover { background: #334155; }
+        .btn-sm { padding: 8px 16px; font-size: 0.85em; }
+
+        /* ===== SYSTEM MODE BANNER ===== */
+        .mode-banner {
+            background: #fef3c7; border: 3px solid #fde047;
+            border-radius: var(--radius); padding: 18px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 14px; margin-bottom: 30px;
+        }
+        .mode-info h3 { font-size: 1.1em; font-weight: 700; color: var(--text-main); }
+        .mode-info p { font-size: 0.85em; color: var(--text-muted); }
+        
+        .mode-controls { display: flex; align-items: center; gap: 12px; }
+        .mode-pill {
+            padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: 0.9em;
+        }
+        .mode-pill.auto { background: #84cc16; color: white; }
+        .mode-pill.manual { background: #94a3b8; color: white; }
+
+        /* ===== SECTION LABEL ===== */
+        .sec-label {
+            font-size: 1.4em; font-weight: 700; color: #f97316;
+            text-align: center; margin: 36px 0 20px; text-transform: capitalize;
+        }
+
+        /* ===== LIVE SENSOR CARDS (MATCHING IMAGE DESIGN) ===== */
+        .sensor-container {
+            background: white; border: 3px solid #a3e635; /* Border hijau muda segar */
+            border-radius: var(--radius); padding: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative; min-height: 160px;
+            box-shadow: 0 8px 0px rgba(163,230,53,0.15);
+        }
+        .sensor-container.temperature {
+            border-color: #fde047;
+            box-shadow: 0 8px 0px rgba(253,224,71,0.2);
+        }
+        .sensor-left { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .sensor-header-title { font-size: 1.3em; font-weight: 700; color: var(--text-main); }
+        
+        .value-box-wrap { display: flex; align-items: center; gap: 10px; }
+        .value-box-label { font-size: 0.9em; font-weight: 600; color: var(--text-muted); }
+        .value-box {
+            background: #fffbeb; border: 2px solid #fde047; padding: 10px 20px;
+            border-radius: 14px; font-size: 1.5em; font-weight: 700; color: var(--primary);
+            display: inline-flex; align-items: center; justify-content: center; min-width: 90px;
+        }
+        .sensor-unit { font-size: 0.6em; margin-left: 4px; color: var(--text-muted); }
+        
+        .sensor-right-icon { font-size: 4.5em; color: #cbd5e1; opacity: 0.8; padding-right: 10px; }
+
+        /* Hidden/subtle items to keep logic from breaking */
+        .hidden-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 8px; overflow: hidden; display: none; }
+        .hidden-bar-fill { height: 100%; background: var(--primary); width: 0%; }
+
+        /* ===== RELAY SWITCH DESIGN ===== */
+        .relay-box {
+            max-width: 340px; margin: 0 auto 30px; text-align: center;
+            border: 3px solid #a3e635; box-shadow: 0 8px 0px rgba(163,230,53,0.15);
+        }
+        .relay-switch-row {
+            display: flex; align-items: center; justify-content: center; gap: 16px; margin: 20px 0;
+        }
+        .relay-label-text { font-size: 1.2em; font-weight: 700; color: var(--text-muted); }
+        
+        /* Modern Toggle Slider */
+        .switch {
+            position: relative; display: inline-block; width: 75px; height: 38px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e1;
+            transition: .3s; border-radius: 34px; border: 2px solid #94a3b8;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px;
+            left: 4px; bottom: 4px; background-color: white; transition: .3s;
+            border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider { background-color: #84cc16; border-color: #4d7c0f; }
+        input:checked + .slider:before { transform: translateX(37px); }
+
+        /* ===== TERMINAL DESIGN ===== */
+        .terminal {
+            background: #fffbeb; border: 3px solid #a3e635; border-radius: var(--radius); padding: 20px;
+        }
+        .terminal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .terminal-dots { display: flex; gap: 6px; align-items: center; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.r { background: #ef4444; } .dot.y { background: #eab308; } .dot.g { background: #22c55e; }
+        .terminal-title { font-size: 0.95em; font-weight: 700; color: var(--text-main); margin-left: 6px; }
+        .log-panel {
+            height: 160px; overflow-y: auto; background: white; border: 2px solid #e2e8f0;
+            border-radius: var(--radius-sm); padding: 12px; font-family: 'Space Mono', monospace; font-size: 12px; color: #1e293b;
+        }
+        .log-line { margin-bottom: 4px; }
+        .log-time { color: #94a3b8; margin-right: 6px; }
+
+        /* ALERT BANNER SYSTEM */
+        .alert-banner { display: none; background: #fef3c7; border: 3px solid #ef4444; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; color: #b91c1c; }
+        .alert-banner.show { display: flex; align-items: center; gap: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="status-wrap">
+    <div class="badge" id="status-bt"><i class="fab fa-bluetooth-b"></i> BT Offline</div>
+    <div class="badge" id="status-fb"><i class="fas fa-cloud"></i> DB Offline</div>
+</div>
+
+<div class="wrapper">
+
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-title">Duda Fan</div>
+            <div class="subtitle-banner">Smart Fan in the Vent !</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-cloud"></i> Firebase Cloud Sync</div>
+            <label>API Key</label>
+            <input type="password" id="fb-apiKey" placeholder="Masukkan API Key...">
+            <label>Database URL</label>
+            <input type="text" id="fb-dbUrl" placeholder="https://your-database.firebaseio.com">
+            <label>Node Path</label>
+            <input type="text" id="fb-path" value="smarthome/ruangan1">
+            <button class="btn btn-full" id="btn-connect-fb">
+                <i class="fas fa-link"></i> Connect with Firebase
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-microchip"></i> Microbit Bluetooth</div>
+            <p style="font-size:0.85em; color:var(--text-muted); line-height:1.6; margin-bottom:20px;">
+                Pastikan bluetooth pada device Anda aktif sebelum menekan tombol hubungkan di bawah ini.
+            </p>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">
+                <button class="btn" id="btn-connect-ble">
+                    <i class="fab fa-bluetooth"></i> Connect with Microbit
+                </button>
+                <button class="btn btn-dark" id="btn-disconnect-ble" disabled>
+                    <i class="fas fa-times"></i> Disconnect
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mode-banner" id="modeBanner">
+        <div class="mode-info">
+            <h3>⚙️ System Mode</h3>
+            <p>Atur ke mode otomatis untuk kendali sensor otomatis, atau manual untuk kendali bebas.</p>
+        </div>
+        <div class="mode-controls">
+            <div class="mode-pill auto" id="modePill">Automatic</div>
+            <button class="btn btn-sm btn-dark" id="btnToggleMode">Ke Mode Manual</button>
+        </div>
+    </div>
+
+    <div class="alert-banner" id="alertEmber">
+        <span style="font-size: 1.5em;">⚠️</span>
+        <div>
+            <strong>Pemberitahuan Sistem:</strong> Batas ambang jarak aman terlampaui (> 30 cm). Silakan cek perangkat kipas atau ventilasi Anda.
+        </div>
+    </div>
+
+    <div class="sec-label">Live sensor data</div>
+    <div class="grid-2" style="margin-bottom: 24px;">
+        
+        <div class="sensor-container">
+            <div class="sensor-left">
+                <div class="sensor-header-title">Ultrasonik</div>
+                <div class="value-box-wrap">
+                    <span class="value-box-label">Person</span>
+                    <div class="value-box" id="val-jarak">
+                        --<span class="sensor-unit">CM</span>
+                    </div>
+                </div>
+                <div class="hidden-bar"><div class="hidden-bar-fill" id="bar-jarak"></div></div>
+                <div style="display:none;"><canvas id="chart-jarak"></canvas></div>
+            </div>
+            <div class="sensor-right-icon">
+                <i class="fas fa-user-alt"></i>
+            </div>
+        </div>
+
+        <div class="sensor-container temperature" id="card-ember">
+            <div class="sensor-left">
+                <div class="sensor-header-title">Temperature</div>
+                <div class="value-box-wrap">
+                    <span class="value-box-label">Suhu</span>
+                    <div class="value-box" id="val-jarak-manual">
+                        --<span class="sensor-unit">°C</span>
+                    </div>
+                </div>
+                <span id="ember-emoji" style="display:none;"></span>
+                <div class="hidden-bar"><div class="hidden-bar-fill" id="bar-jarak-manual"></div></div>
+                <div style="display:none;"><canvas id="chart-jarak-manual"></canvas></div>
+            </div>
+            <div class="sensor-right-icon">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card relay-box" id="card-relay">
+        <div class="card-title" style="justify-content: center; margin-bottom: 5px;"><i class="fas fa-bolt"></i> Relay</div>
+        <div id="icon-relay" style="display:none;"></div>
+        <div class="relay-switch-row">
+            <span class="relay-label-text">ON</span>
+            <label class="switch">
+                <input type="checkbox" id="sw-relay" onchange="window.toggleRelay(this.checked)">
+                <span class="slider"></span>
+            </label>
+            <span class="relay-label-text" id="lbl-relay" style="color: var(--primary);">OFF</span>
+        </div>
+        <div id="manual-relay" style="font-size:0.8em; color:var(--text-muted); font-weight:600; display:none; justify-content:center;">Mode Manual Aktif</div>
+    </div>
+
+    <div class="sec-label">History Chart !</div>
+    <div class="card" style="padding: 20px;">
+        <div class="card-title" style="color: var(--primary);"><i class="fas fa-chart-line"></i> Jarak (cm)</div>
+        <div style="height:160px;"><canvas id="chart-jarak-big"></canvas></div>
+        <div style="display:none; height:10px;"><canvas id="chart-jarak-manual-big"></canvas></div>
+    </div>
+
+    <div class="terminal">
+        <div class="terminal-hdr">
+            <div class="terminal-dots">
+                <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+                <span class="terminal-title">system terminal - duda fan</span>
+            </div>
+            <button class="btn btn-sm btn-dark" id="btnClearLog" style="padding: 5px 12px; font-size: 0.75em;">
+                <i class="fas fa-trash"></i> Clear
+            </button>
+        </div>
+        <div id="terminalLog" class="log-panel"></div>
+    </div>
+
+</div>
+
+<script type="module">
+import { initializeApp, getApps, deleteApp }     from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, update, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+const state = {
+    db: null, path: "", unsub: null, data: {},
+    device: null, txChar: null, rxChar: null,
+    bleConnected: false, bleBuffer: "",
+    modeOtomatis: 1,   
+    charts: {},
+    history: {
+        jarak:        { labels: [], data: [] },
+        jarak_manual: { labels: [], data: [] }
+    }
+};
+
+const MAX_PTS = 30;
+const $ = id => document.getElementById(id);
+
+function log(msg, color = "#1e293b") {
+    const t = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    $('terminalLog').insertAdjacentHTML('afterbegin',
+        `<div class="log-line"><span class="log-time">[${t}]</span><span style="color:${color}"> ${msg}</span></div>`);
+}
+
+function updateBTStatus() {
+    $('btn-connect-ble').disabled    = state.bleConnected;
+    $('btn-disconnect-ble').disabled = !state.bleConnected;
+    const b = $('status-bt');
+    b.innerHTML = state.bleConnected
+        ? '<i class="fab fa-bluetooth-b"></i> BT Connected'
+        : '<i class="fab fa-bluetooth-b"></i> BT Offline';
+    b.className = 'badge' + (state.bleConnected ? ' online' : '');
+}
+function updateDBStatus(ok) {
+    const b = $('status-fb');
+    b.innerHTML = ok
+        ? '<i class="fas fa-cloud"></i> DB Synced'
+        : '<i class="fas fa-cloud"></i> DB Offline';
+    b.className = 'badge' + (ok ? ' online' : '');
+}
+
+function applyMode(isAuto) {
+    state.modeOtomatis = isAuto ? 1 : 0;
+    const pill   = $('modePill');
+    const btnTgl = $('btnToggleMode');
+
+    if (isAuto) {
+        pill.className = 'mode-pill auto';
+        pill.innerHTML = 'Automatic';
+        btnTgl.innerHTML = 'Ke Mode Manual';
+        $('manual-relay').style.display = 'none';
+    } else {
+        pill.className = 'mode-pill manual';
+        pill.innerHTML = 'Manual';
+        btnTgl.innerHTML = 'Ke Mode Otomatis';
+        $('manual-relay').style.display = 'flex';
+    }
+
+    sendBLE("mode", isAuto ? 1 : 0);
+    if (state.db) update(ref(state.db, `${state.path}/mode`), { value: isAuto ? 1 : 0 });
+    log(`Mode → ${isAuto ? 'OTOMATIS' : 'MANUAL'}`, isAuto ? '#16a34a' : '#d97706');
+}
+
+$('btnToggleMode').onclick = () => applyMode(state.modeOtomatis === 0);
+
+function updateRelayUI(isOn) {
+    const card = $('card-relay');
+    const sw   = $('sw-relay');
+    $('lbl-relay').textContent = isOn ? 'ON' : 'OFF';
+    if (sw && document.activeElement !== sw) sw.checked = isOn;
+}
+
+function updateSensorUI(key, val) {
+    const elId = key === 'jarak_manual' ? 'val-jarak-manual' : `val-${key}`;
+    const barId = key === 'jarak_manual' ? 'bar-jarak-manual' : `bar-${key}`;
+    const el = $(elId);
+    if (!el) return;
+
+    let numSpan = el.querySelector('.num');
+    if (!numSpan) {
+        el.innerHTML = `<span class="num">${val}</span><span class="sensor-unit">${key === 'jarak_manual' ? '°C' : 'CM'}</span>`;
+    } else {
+        numSpan.textContent = val;
+    }
+
+    const bar = $(barId);
+    if (bar) bar.style.width = Math.min(100, (val / 150) * 100) + '%';
+
+    if (key === 'jarak_manual') {
+        const alert = $('alertEmber');
+        const emoji = $('ember-emoji');
+        const card  = $('card-ember');
+        if (val > 30) {
+            alert.classList.add('show');
+            if (emoji) emoji.textContent = '🚨';
+        } else {
+            alert.classList.remove('show');
+            if (emoji) emoji.textContent = '🪣';
+        }
+    }
+}
+
+const SVC = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const TX  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const RX  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+async function connectBLE() {
+    try {
+        if (!navigator.bluetooth) throw new Error("Browser tidak mendukung Web Bluetooth.");
+        log("Scanning Micro:bit...", "#d97706");
+        state.device = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: "BBC micro:bit" }],
+            optionalServices: [SVC]
+        });
+        state.device.addEventListener("gattserverdisconnected", () => {
+            state.bleConnected = false; updateBTStatus();
+            log("BLE Terputus!", "#ef4444");
+        });
+        const server  = await state.device.gatt.connect();
+        const service = await server.getPrimaryService(SVC);
+        state.txChar  = await service.getCharacteristic(TX);
+        state.rxChar  = await service.getCharacteristic(RX);
+        await state.txChar.startNotifications();
+        state.txChar.addEventListener("characteristicvaluechanged", onBLEData);
+        state.bleConnected = true; updateBTStatus();
+        log(`✓ Terhubung: ${state.device.name}`, "#16a34a");
+    } catch (e) { log(`BLE Error: ${e.message}`, "#ef4444"); }
+}
+
+function onBLEData(event) {
+    let arr = [];
+    for (let i = 0; i < event.target.value.byteLength; i++)
+        arr.push(event.target.value.getUint8(i));
+    state.bleBuffer += String.fromCharCode.apply(null, arr);
+    const lines = state.bleBuffer.split('\n');
+    state.bleBuffer = lines.pop() || "";
+    lines.forEach(line => { const t = line.trim(); if (t) processBLELine(t); });
+}
+
+function processBLELine(txt) {
+    log(`RX ← ${txt}`, "#2563eb");
+    if (!txt.includes(',')) return;
+
+    const idx = txt.indexOf(',');
+    const key = txt.substring(0, idx).trim();
+    const val = parseFloat(txt.substring(idx + 1).trim());
+    if (isNaN(val)) return;
+
+    if (key === "mode") {
+        applyMode(val === 1);
+        return;
+    }
+    if (key === "Relay") {
+        updateRelayUI(val === 1);
+        if (state.db) update(ref(state.db, `${state.path}/relay`), { value: val, tipe: 'switch' });
+        return;
+    }
+    if (key === "jarak") {
+        updateSensorUI("jarak", val);
+        pushHistory("jarak", val);
+        if (state.db) update(ref(state.db, `${state.path}/jarak`), { value: val, tipe: 'sensor', satuan: 'cm' });
+        return;
+    }
+    if (key === "jarak_manual") {
+        updateSensorUI("jarak_manual", val);
+        pushHistory("jarak_manual", val);
+        if (state.db) update(ref(state.db, `${state.path}/jarak_manual`), { value: val, tipe: 'sensor', satuan: 'cm' });
+        return;
+    }
+}
+
+async function sendBLE(key, val) {
+    if (!state.rxChar) return;
+    const payload = `${key},${val}\n`;
+    try {
+        await state.rxChar.writeValue(new TextEncoder().encode(payload));
+        log(`TX → ${payload.trim()}`, "#c2410c");
+    } catch (e) { log(`TX Error: ${e.message}`, "#ef4444"); }
+}
+
+window.toggleRelay = (isChecked) => {
+    if (state.modeOtomatis === 1) return;
+    const val = isChecked ? 1 : 0;
+    updateRelayUI(isChecked);
+    sendBLE("Relay", val);
+    if (state.db) update(ref(state.db, `${state.path}/relay`), { value: val });
+    log(`Relay → ${isChecked ? 'ON' : 'OFF'}`, "#d97706");
+};
+
+async function connectFirebase() {
+    const apiKey = $('fb-apiKey').value.trim();
+    const dbUrl  = $('fb-dbUrl').value.trim();
+    const path   = $('fb-path').value.trim() || "smarthome/ruangan1";
+    if (!apiKey || !dbUrl) { alert("Isi API Key dan Database URL!"); return; }
+
+    try {
+        const apps = getApps();
+        if (apps.length > 0) await deleteApp(apps[0]);
+        if (state.unsub) state.unsub();
+
+        const app = initializeApp({
+            apiKey, databaseURL: dbUrl,
+            projectId: dbUrl.replace("https://","").split(".")[0]
+        });
+        state.db   = getDatabase(app);
+        state.path = path;
+        log(`Menghubungkan → /${path}`, "#d97706");
+
+        const initData = {
+            jarak:        { tipe: 'sensor', value: 0, satuan: 'cm' },
+            jarak_manual: { tipe: 'sensor', value: 0, satuan: 'cm' },
+            relay:        { tipe: 'switch', value: 0 },
+            mode:         { tipe: 'switch', value: 1 }
+        };
+
+        state.unsub = onValue(ref(state.db, path), (snap) => {
+            const d = snap.val();
+            if (!d) { set(ref(state.db, path), initData); return; }
+            state.data = d;
+            updateDBStatus(true);
+
+            if (d.jarak)        updateSensorUI("jarak",        d.jarak.value ?? 0);
+            if (d.jarak_manual) updateSensorUI("jarak_manual", d.jarak_manual.value ?? 0);
+            if (d.relay)        updateRelayUI((d.relay.value ?? 0) === 1);
+            if (d.mode)         applyMode((d.mode.value ?? 1) === 1);
+        }, err => { log(`DB Error: ${err.message}`, "#ef4444"); updateDBStatus(false); });
+
+        log(`✓ Firebase OK: /${path}`, "#16a34a");
+        localStorage.setItem('smarthome_cfg', JSON.stringify({ apiKey, dbUrl, path }));
+    } catch (e) { log(`DB Error: ${e.message}`, "#ef4444"); updateDBStatus(false); }
+}
+
+const CHART_CFG = {
+    jarak:        { color: '#f97316', label: 'Jarak' },
+    jarak_manual: { color: '#eab308', label: 'Jarak Manual' }
+};
+
+function makeChart(canvasId, key, height = 90) {
+    const canvas = $(canvasId);
+    if (!canvas) return null;
+    if (state.charts[canvasId]) state.charts[canvasId].destroy();
+
+    const ctx   = canvas.getContext('2d');
+    const color = CHART_CFG[key].color;
+    const grad  = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, color + '44');
+    grad.addColorStop(1, color + '00');
+
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels:   state.history[key].labels,
+            datasets: [{ data: state.history[key].data, borderColor: color, backgroundColor: grad, borderWidth: 3, pointRadius: 2, fill: true, tension: 0.4 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { 
+                y: { display: true, grid: { color: '#fef3c7' } }, 
+                x: { display: false } 
+            },
+            animation: { duration: 200 }
+        }
+    });
+}
+
+function initCharts() {
+    state.charts['chart-jarak']         = makeChart('chart-jarak', 'jarak', 70);
+    state.charts['chart-jarak-manual']  = makeChart('chart-jarak-manual', 'jarak_manual', 70);
+    state.charts['chart-jarak-big']     = makeChart('chart-jarak-big', 'jarak', 160);
+    state.charts['chart-jarak-manual-big'] = makeChart('chart-jarak-manual-big', 'jarak_manual', 160);
+}
+
+function pushHistory(key, val) {
+    const h = state.history[key];
+    if (!h) return;
+    h.labels.push(new Date().toLocaleTimeString('id-ID', { hour12: false }));
+    h.data.push(parseFloat(val) || 0);
+    if (h.labels.length > MAX_PTS) { h.labels.shift(); h.data.shift(); }
+
+    [`chart-${key === 'jarak_manual' ? 'jarak-manual' : key}`,
+     `chart-${key === 'jarak_manual' ? 'jarak-manual' : key}-big`].forEach(id => {
+        const ch = state.charts[id];
+        if (!ch) return;
+        ch.data.labels           = h.labels;
+        ch.data.datasets[0].data = h.data;
+        ch.update('none');
+    });
+}
+
+$('btn-connect-ble').onclick    = connectBLE;
+$('btn-disconnect-ble').onclick = () => { if (state.device) state.device.gatt.disconnect(); };
+$('btn-connect-fb').onclick     = connectFirebase;
+$('btnClearLog').onclick        = () => $('terminalLog').innerHTML = '';
+
+window.onload = () => {
+    initCharts();
+    applyMode(true);
+    const saved = JSON.parse(localStorage.getItem('smarthome_cfg') || '{}');
+    if (saved.apiKey) {
+        $('fb-apiKey').value = saved.apiKey;
+        $('fb-dbUrl').value  = saved.dbUrl;
+        $('fb-path').value   = saved.path || "smarthome/ruangan1";
+    }
+    log("✓ Duda Fan Siap — Hubungkan Firebase & Micro:bit Anda 🐻🍊", "#16a34a");
+};
+</script>
+</body>
+</html>
